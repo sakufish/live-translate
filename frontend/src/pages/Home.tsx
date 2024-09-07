@@ -9,6 +9,7 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isChineseToEnglish, setIsChineseToEnglish] = useState<boolean>(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopListeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const translateText = async (text: string, source: string, target: string) => {
     try {
@@ -44,6 +45,16 @@ const Home: React.FC = () => {
         clearTimeout(timerRef.current);
       }
 
+      if (stopListeningTimerRef.current) {
+        clearTimeout(stopListeningTimerRef.current);
+      }
+
+      stopListeningTimerRef.current = setTimeout(() => {
+        if (listening) {
+          toggleListening();
+        }
+      }, 1000);
+
       timerRef.current = setTimeout(async () => {
         const sentences = transcript.split(/(?<=[.!?])\s+/);
         const lastSentence = sentences[sentences.length - 1];
@@ -55,7 +66,7 @@ const Home: React.FC = () => {
           }
         }
         resetTranscript();
-      }, 500);
+      }, 1000);
     }
   }, [transcript, isChineseToEnglish]);
 
@@ -76,7 +87,7 @@ const Home: React.FC = () => {
     resetTranscript();
     if (listening) {
       toggleListening();
-      setTimeout(() => toggleListening(), 500);
+      setTimeout(() => toggleListening(), 1000);
     }
   };
 
