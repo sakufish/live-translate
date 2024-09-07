@@ -1,3 +1,3 @@
 # Live Translation to voice! 
 
-![image](https://github.com/user-attachments/assets/d5045fc6-458b-4910-acc2-3f589440dd77)
+![image](https://github.com/user-attachments/assets/993fd27e-5597-4bc7-92d4-47081961ee32)
