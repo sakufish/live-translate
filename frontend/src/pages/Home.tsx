@@ -83,7 +83,7 @@ const Home: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="border-4 border-blue-500 rounded-xl p-10 max-w-xl w-full bg-gray-100 shadow-lg">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Live Translation App</h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">Live Translation!</h1>
 
         <div className="mb-6 flex items-center space-x-4">
           <div className="w-1/3 flex justify-center">
