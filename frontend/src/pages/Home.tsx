@@ -1,41 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import axios from 'axios';
 
 const Home: React.FC = () => {
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
+  const [currentSentence, setCurrentSentence] = useState<string>('');
   const [translatedText, setTranslatedText] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Function to translate text to English using backend service
   const translateText = async (text: string) => {
     try {
-      const formData = new FormData();
-      formData.append('prompt', `
-        Translate the following text to English:
-        ${text}
-      `);
-
-      const response = await axios.post('http://localhost:5000/api/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const response = await axios.post('http://localhost:5000/api/translate', {
+        text,
+        source: 'zh',
+        target: 'en'
       });
-
-      let description = response.data.description;
-
-      // Clean up the response
-      description = description.replace(/```json|```/g, '').trim();
-      setTranslatedText(description);
+      const translation = response.data.translation;
+      setTranslatedText(translation);
+      speakText(translation);
     } catch (error) {
       console.error('Error translating text:', error);
       setError('Failed to translate text');
     }
   };
 
+  const speakText = (text: string) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US'; // Set the language for the speech synthesis
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   useEffect(() => {
     if (transcript) {
-      translateText(transcript);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
+      timerRef.current = setTimeout(() => {
+        const sentences = transcript.split(/(?<=[.!?])\s+/);
+        const lastSentence = sentences[sentences.length - 1];
+        setCurrentSentence(lastSentence);
+        translateText(lastSentence);
+        resetTranscript();
+      }, 1000);
     }
   }, [transcript]);
 
@@ -43,51 +53,55 @@ const Home: React.FC = () => {
     return <span>Browser doesn't support speech recognition.</span>;
   }
 
-  const startListening = () => SpeechRecognition.startListening({ continuous: true, language: 'zh-CN' });
-  const stopListening = () => SpeechRecognition.stopListening();
+  const toggleListening = () => {
+    if (listening) {
+      SpeechRecognition.stopListening();
+    } else {
+      SpeechRecognition.startListening({ continuous: true, language: 'zh-CN' });
+    }
+  };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <h1 className="text-4xl font-bold mb-8">Live Translation App</h1>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <h1 className="text-3xl font-bold text-gray-800 mb-8">Live Translation App</h1>
 
-      <div className="mb-4">
-        {listening ? (
-          <p className="text-xl text-green-500">Listening...</p>
-        ) : (
-          <p className="text-xl text-red-500">Mic is off</p>
-        )}
-      </div>
-
-      <div className="space-x-4">
+      <div className="mb-6">
         <button
-          onClick={startListening}
-          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          disabled={listening}
+          onClick={toggleListening}
+          className={`w-16 h-16 ${listening ? 'bg-red-600' : 'bg-blue-600'} text-white rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow duration-300`}
+          aria-label={listening ? 'Stop Recording' : 'Start Recording'}
         >
-          Start Mic
-        </button>
-        <button
-          onClick={stopListening}
-          className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          disabled={!listening}
-        >
-          Stop Mic
-        </button>
-        <button
-          onClick={resetTranscript}
-          className="px-6 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
-        >
-          Reset
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-8 h-8"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {listening ? (
+              <circle cx="12" cy="12" r="10" fill="currentColor" />
+            ) : (
+              <circle cx="12" cy="12" r="10" stroke="currentColor" />
+            )}
+          </svg>
         </button>
       </div>
 
-      <div className="mt-8 p-4 bg-white shadow-md rounded w-full max-w-3xl">
-        <h2 className="text-2xl font-semibold mb-4">Live Translation:</h2>
-        {error ? (
-          <p className="text-lg text-red-500">{error}</p>
-        ) : (
-          <p className="text-lg">{translatedText}</p>
-        )}
+      <div className="flex flex-col items-center w-full max-w-md bg-white p-6 rounded-lg shadow-lg">
+        <div className="flex flex-row justify-between items-start mb-6">
+          <div className="w-1/2 px-4">
+            <p className="text-sm font-semibold text-gray-600 mb-2">Chinese</p>
+            <p className="text-lg font-medium text-gray-800">{currentSentence}</p>
+          </div>
+          <div className="w-1/2 px-4">
+            <p className="text-sm font-semibold text-gray-600 mb-2">English</p>
+            <p className="text-lg font-medium text-gray-800">{translatedText}</p>
+          </div>
+        </div>
+        {error && <p className="text-red-600 text-center mt-4">{error}</p>}
       </div>
     </div>
   );
