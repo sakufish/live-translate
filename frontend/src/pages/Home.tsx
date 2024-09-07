@@ -12,7 +12,7 @@ const Home: React.FC = () => {
 
   const translateText = async (text: string, source: string, target: string) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/translate', {
+      const response = await axios.post('https://live-translate.onrender.com/api/translate', {
         text,
         source,
         target
