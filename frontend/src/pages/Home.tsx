@@ -8,6 +8,7 @@ const Home: React.FC = () => {
   const [translatedText, setTranslatedText] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isChineseToEnglish, setIsChineseToEnglish] = useState<boolean>(true);
+  const [autoPlay, setAutoPlay] = useState<boolean>(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopListeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -20,6 +21,9 @@ const Home: React.FC = () => {
       });
       setCurrentSentence(text);
       setTranslatedText(response.data.translation);
+      if (autoPlay) {
+        playTranslatedText(response.data.translation);
+      }
     } catch (error) {
       console.error('Error translating text:', error);
       setError('Failed to translate text');
@@ -34,9 +38,9 @@ const Home: React.FC = () => {
     }
   };
 
-  const playTranslatedText = () => {
+  const playTranslatedText = (text: string) => {
     const speechLang = isChineseToEnglish ? 'en-US' : 'zh-CN';
-    speakText(translatedText, speechLang);
+    speakText(text, speechLang);
   };
 
   useEffect(() => {
@@ -68,7 +72,7 @@ const Home: React.FC = () => {
         resetTranscript();
       }, 1000);
     }
-  }, [transcript, isChineseToEnglish]);
+  }, [transcript, isChineseToEnglish, autoPlay]);
 
   if (!SpeechRecognition.browserSupportsSpeechRecognition()) {
     return <span>Browser doesn't support speech recognition.</span>;
@@ -82,13 +86,17 @@ const Home: React.FC = () => {
     }
   };
 
-  const handleToggle = () => {
+  const handleToggleLanguage = () => {
     setIsChineseToEnglish(!isChineseToEnglish);
     resetTranscript();
     if (listening) {
       toggleListening();
       setTimeout(() => toggleListening(), 1000);
     }
+  };
+
+  const handleToggleAutoPlay = () => {
+    setAutoPlay(!autoPlay);
   };
 
   return (
@@ -131,7 +139,7 @@ const Home: React.FC = () => {
 
         <div className="flex flex-col items-center w-full bg-white p-6 rounded-lg shadow-lg mb-6">
           <button
-            onClick={handleToggle}
+            onClick={handleToggleLanguage}
             className="mb-4 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
           >
             {isChineseToEnglish ? 'Switch to English to Chinese' : 'Switch to Chinese to English'}
@@ -154,12 +162,21 @@ const Home: React.FC = () => {
 
           {error && <p className="text-red-600 text-center mt-4">{error}</p>}
 
-          <button
-            onClick={playTranslatedText}
-            className="mt-4 bg-blue-500 text-white py-2 px-6 rounded-full hover:bg-blue-600"
-          >
-            Play Translated Text
-          </button>
+          <div className="flex items-center mt-4 space-x-4">
+            <button
+              onClick={() => playTranslatedText(translatedText)}
+              className="bg-blue-500 text-white py-2 px-6 rounded-full hover:bg-blue-600"
+            >
+              Play Translated Text
+            </button>
+
+            <button
+              onClick={handleToggleAutoPlay}
+              className={`py-2 px-6 rounded-full text-white ${autoPlay ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-500 hover:bg-gray-600'}`}
+            >
+              AutoPlay {autoPlay ? 'On' : 'Off'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
